@@ -1,0 +1,15 @@
+deprecated
+*.npy
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+dog_gr.jpg
+private
+sample_icons/*
+sample_icons2/*
+*.sublime-workspace
+*.sublime-project
+LOG_test/*
+bck/*
+*.jpg
