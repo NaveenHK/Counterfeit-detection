@@ -12,12 +12,7 @@ import pickle
 import os
 import numpy as np
 import tensorflow as tf
-
-
 import time
-
-
-
 
 from collections import OrderedDict
 developer=pickle.load(open('developers.p',"rb"))
@@ -34,7 +29,7 @@ def topk(loc,dis,quary,b,z):
         total=0
         
         for i in range(806):
-            PATH_TO_IMAGES = 'D:/Labelled_Final/'+str(i)+'/'
+            PATH_TO_IMAGES = './Labelled_Final/'+str(i)+'/'
             image_paths = os.listdir(PATH_TO_IMAGES)
             
             for img in range(len(image_paths)):
@@ -46,6 +41,8 @@ def topk(loc,dis,quary,b,z):
             NN=sim_loc[count]
             dis=im_dis[count]
             quary=quary_loc[count]
+            if quary[0:2]=='A_':
+                quary=quary[2:]
             dic={}
             for data in range(len(NN)):
                 dic[NN[data]]=dis[data]
@@ -54,6 +51,8 @@ def topk(loc,dis,quary,b,z):
             
             num=0
             for im in d_sorted:
+                if im[0:2]=='A_':
+                    im=im[2:]
                 if num<top:
                     if im in image_paths:
                         total+=1
@@ -95,32 +94,32 @@ def topk(loc,dis,quary,b,z):
 
 # parameters
 bool_PCA = True
-batch_size_all = 20000
+batch_size_all = 3539
 batch_size_quary = 1
 best_simalr_list = [50]
 #test_case = str(sys.argv[1])
-main_dir = "D:/Results/data2/l2/"
+main_dir = "./results/"
 
-top_icon = np.load("D:/Combined/combined_labelled.npy")
+top_icon = np.load("resnet_style_5c_labelled_data.npy")
 quary_size = top_icon.shape[0]
 print(quary_size)
 quary_image_loc = top_icon[:, 0]
 quary_content = top_icon[:, 1:4097]
-quary_style = top_icon[:, 4097:8193]
-quary_text =  top_icon[:, 8193:]
+#quary_style = top_icon[:, 4097:8193]
+#quary_text =  top_icon[:, 8193:]
 
-for z in range(0,11):
-    for b in range(1,11):
+for z in range(0,1):
+    for b in range(1,2):
         for best_simalr in best_simalr_list:
             # create tf model
-            with tf.device('/gpu'):
-                tf_quary_style = tf.placeholder("float", [quary_size, 4096])
+            with tf.device('/cpu:0'):
+                #tf_quary_style = tf.placeholder("float", [quary_size, 4096])
                 tf_quary_content = tf.placeholder("float", [quary_size, 4096])
-                tf_quary_text = tf.placeholder("float", [quary_size, 100])
+                #tf_quary_text = tf.placeholder("float", [quary_size, 100])
             
-                tf_style = tf.placeholder("float", [batch_size_all, 4096])
+                #tf_style = tf.placeholder("float", [batch_size_all, 4096])
                 tf_content = tf.placeholder("float", [batch_size_all, 4096])
-                tf_text = tf.placeholder("float", [batch_size_all, 100])
+                #tf_text = tf.placeholder("float", [batch_size_all, 100])
                 # cosine distance
                 c_D1 = tf.matmul(tf.square(tf_quary_content), tf.ones_like(tf.transpose(tf_content)))
                 c_D2 = tf.matmul(tf.ones_like(tf_quary_content), tf.transpose(tf.square(tf_content)))
@@ -128,20 +127,20 @@ for z in range(0,11):
                 c_L2 = c_D1 + c_D2 - 2 * c_DD
                 c_cosine = 1 - c_DD / (tf.sqrt(c_D1 * c_D2))
             
-                s_D1 = tf.matmul(tf.square(tf_quary_style), tf.ones_like(tf.transpose(tf_style)))
-                s_D2 = tf.matmul(tf.ones_like(tf_quary_style), tf.transpose(tf.square(tf_style)))
-                s_DD = tf.matmul(tf_quary_style, tf.transpose(tf_style))
-                s_L2 = s_D1 + s_D2 - 2 * s_DD
-                s_cosine = 1 - s_DD / (tf.sqrt(s_D1 * s_D2))
-                
-                t_D1 = tf.matmul(tf.square(tf_quary_text), tf.ones_like(tf.transpose(tf_text)))
-                t_D2 = tf.matmul(tf.ones_like(tf_quary_text), tf.transpose(tf.square(tf_text)))
-                t_DD = tf.matmul(tf_quary_text, tf.transpose(tf_text))
-                t_L2 = t_D1 + t_D2 - 2 * t_DD
-                t_cosine = 1 - t_DD / (tf.sqrt(t_D1 * t_D2))
-            
-                cosine = c_cosine  + b*s_cosine + z*t_cosine
-                L2 = s_L2 *b+ c_L2  + z*t_L2
+#                s_D1 = tf.matmul(tf.square(tf_quary_style), tf.ones_like(tf.transpose(tf_style)))
+#                s_D2 = tf.matmul(tf.ones_like(tf_quary_style), tf.transpose(tf.square(tf_style)))
+#                s_DD = tf.matmul(tf_quary_style, tf.transpose(tf_style))
+#                s_L2 = s_D1 + s_D2 - 2 * s_DD
+#                s_cosine = 1 - s_DD / (tf.sqrt(s_D1 * s_D2))
+#                
+#                t_D1 = tf.matmul(tf.square(tf_quary_text), tf.ones_like(tf.transpose(tf_text)))
+#                t_D2 = tf.matmul(tf.ones_like(tf_quary_text), tf.transpose(tf.square(tf_text)))
+#                t_DD = tf.matmul(tf_quary_text, tf.transpose(tf_text))
+#                t_L2 = t_D1 + t_D2 - 2 * t_DD
+#                t_cosine = 1 - t_DD / (tf.sqrt(t_D1 * t_D2))
+#            
+                cosine = c_cosine  #+ b*s_cosine + z*t_cosine
+                L2 = c_L2
                 
             
              
@@ -154,8 +153,8 @@ for z in range(0,11):
                 simialar_style_images_names = np.ndarray([quary_size, best_simalr], dtype='object')
                 simialar_style_apk_names = np.ndarray([quary_size, best_simalr], dtype='object')
             
-                for big in range(1,23):
-                    Big = np.load("D:/Combined/embeddings_" + str(big) + ".npy")
+                for big in range(1,2):
+                    Big = np.load("resnet_style_5c_labelled_data.npy")
                     
                     all_image_loc = Big[:, 0]
                     all_image_size = Big.shape[0]
@@ -163,18 +162,18 @@ for z in range(0,11):
                     for batch in range(int(all_image_size / batch_size_all)):
                         np_images_loc = all_image_loc[batch * batch_size_all: (batch + 1) * batch_size_all]
                         np_c = Big[batch * batch_size_all: (batch + 1) * batch_size_all, 1:4097]
-                        np_s = Big[batch * batch_size_all: (batch + 1) * batch_size_all, 4097:8193]
-                        np_t = Big[batch * batch_size_all: (batch + 1) * batch_size_all, 8193:]
+                        #np_s = Big[batch * batch_size_all: (batch + 1) * batch_size_all, 4097:8193]
+                        #np_t = Big[batch * batch_size_all: (batch + 1) * batch_size_all, 8193:]
                         
                         #logEntry(batch)
-                        c,l2 = sess.run([ cosine,L2], feed_dict={tf_style: np_s, tf_content: np_c, tf_text: np_t, tf_quary_content: quary_content, tf_quary_style: quary_style, tf_quary_text:quary_text})
+                        c,l2 = sess.run([ cosine,L2], feed_dict={ tf_content: np_c, tf_quary_content: quary_content})
                         
                         for i in range(quary_size):
-                            if(best_simalr < l2.shape[1]):
-                                ind_sort = np.argsort(l2[i])[0:best_simalr]
+                            if(best_simalr < c.shape[1]):
+                                ind_sort = np.argsort(c[i])[0:best_simalr]
                             else:
-                                ind_sort = np.argsort(l2[i])
-                            sorted_dis = l2[i][ind_sort]
+                                ind_sort = np.argsort(c[i])
+                            sorted_dis = c[i][ind_sort]
             
                             j = 0
                             for d in sorted_dis:
